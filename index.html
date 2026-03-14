@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>lunahappy · random video</title>
+    <title>lunahappy · random video (WebView ready)</title>
     <!-- Firebase compat SDK (auth + database) -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
@@ -32,7 +32,6 @@
             box-shadow: 0 30px 50px rgba(0,0,0,0.7), 0 0 0 1px #ac7ecf40;
             border: 1px solid #b485da30;
         }
-        /* header */
         .header {
             display: flex;
             justify-content: space-between;
@@ -264,8 +263,13 @@
         const database = firebase.database();
         const provider = new firebase.auth.GoogleAuthProvider();
 
+        // ==================== handle redirect result (important for WebView) ====================
+        auth.getRedirectResult().catch((error) => {
+            console.warn('Redirect sign-in error:', error);
+            // You could show a user-friendly message, but we'll keep silent
+        });
+
         // ==================== DOM elements ====================
-        const app = document.getElementById('app');
         const loginUI = document.getElementById('loginUI');
         const chatUI = document.getElementById('chatUI');
         const authArea = document.getElementById('authArea');
@@ -296,10 +300,6 @@
         let videoPaused = false;
         let localVideoTrack = null;
 
-        // onDisconnect handlers
-        let onDisconnectWaiting = null;
-        let onDisconnectRoom = null;
-
         // ==================== auth UI update ====================
         function updateAuthUI(user) {
             authArea.innerHTML = '';
@@ -316,10 +316,12 @@
             }
         }
 
-        // ==================== login / logout ====================
+        // ==================== login / logout (redirect version) ====================
         googleLoginBtn.addEventListener('click', async () => {
             try {
-                await auth.signInWithPopup(provider);
+                // Use redirect to keep login inside the WebView
+                await auth.signInWithRedirect(provider);
+                // The page will redirect to Google and then back to our app
             } catch (e) {
                 alert('login failed: ' + e.message);
             }
@@ -398,7 +400,6 @@
         });
 
         // ==================== core chat logic ====================
-        // stops everything: peer connection, removes from waiting/rooms, resets UI
         async function stopAllChat() {
             // remove any waiting entry
             if (waitingRef && currentUser) {
@@ -408,7 +409,6 @@
             // leave room if any
             if (roomRef && currentRoomId && currentUser) {
                 await database.ref(`rooms/${currentRoomId}/participants/${currentUser.uid}`).remove();
-                // if room becomes empty, remove it (optional)
                 roomRef = null;
             }
             if (peerConnection) {
@@ -424,7 +424,6 @@
             partnerId = null;
             connectionStatus.innerText = '💬 idle';
             skipBtn.disabled = true;
-            // enable find
             findBtn.disabled = false;
         }
 
@@ -466,7 +465,7 @@
                     await database.ref(`rooms/${roomId}`).set(roomData);
                     // set up onDisconnect cleanup for both participants
                     database.ref(`rooms/${roomId}/participants/${currentUser.uid}`).onDisconnect().remove();
-                    database.ref(`rooms/${roomId}/participants/${otherUserId}`).onDisconnect().remove(); // we'll also set on other side but here it's fine
+                    database.ref(`rooms/${roomId}/participants/${otherUserId}`).onDisconnect().remove();
 
                     currentRoomId = roomId;
                     roomRef = database.ref(`rooms/${roomId}`);
@@ -568,7 +567,6 @@
                 } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
                     connectionStatus.innerText = '❌ disconnected';
                     skipBtn.disabled = true;
-                    // maybe auto clean?
                 }
             };
 
@@ -603,16 +601,15 @@
                 });
             }
 
-            // onDisconnect cleanups for room signaling (optional)
+            // onDisconnect cleanups for room signaling
             database.ref(`rooms/${roomId}/candidates/${currentUser.uid}`).onDisconnect().remove();
-            database.ref(`rooms/${roomId}/signaling`).onDisconnect().remove(); // risky if both disconnect but fine
+            database.ref(`rooms/${roomId}/signaling`).onDisconnect().remove();
         }
 
         // ==================== skip button ====================
         skipBtn.addEventListener('click', async () => {
             if (!currentUser) return;
             await stopAllChat();
-            // enable find
             findBtn.disabled = false;
             connectionStatus.innerText = '💬 idle (click find)';
         });

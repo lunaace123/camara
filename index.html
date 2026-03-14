@@ -3,463 +3,638 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motion Alert · Productivity Camera</title>
+    <title>lunahappy · random video</title>
+    <!-- Firebase compat SDK (auth + database) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <style>
         * {
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         body {
-            background: #1e1e2f;
+            background: linear-gradient(145deg, #1a1025 0%, #2d1a3a 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0;
-            padding: 16px;
+            padding: 20px;
         }
-        .card {
-            background: #2d2d44;
-            border-radius: 28px;
-            padding: 28px 24px;
-            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.7);
-            max-width: 700px;
+        .app-container {
+            max-width: 1300px;
             width: 100%;
-            color: #f0eefc;
-            border: 1px solid #45406b;
+            background: rgba(22, 12, 30, 0.7);
+            backdrop-filter: blur(16px);
+            border-radius: 48px;
+            padding: 30px;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.7), 0 0 0 1px #ac7ecf40;
+            border: 1px solid #b485da30;
         }
-        h1 {
-            font-size: 2rem;
-            margin-top: 0;
-            margin-bottom: 8px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
+        /* header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(130deg, #f6d0ff, #dbb0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
             display: flex;
             align-items: center;
             gap: 12px;
         }
-        h1 span {
-            background: #4c49b0;
-            font-size: 0.9rem;
-            padding: 6px 14px;
-            border-radius: 60px;
-            font-weight: 400;
+        .logo span {
+            background: #7733b3;
+            padding: 6px 18px;
+            border-radius: 80px;
+            font-size: 1.2rem;
             color: white;
+            -webkit-text-fill-color: white;
+            background: #6d3b9b;
         }
-        .video-container {
-            background: #1a1a2c;
-            border-radius: 24px;
-            overflow: hidden;
-            margin: 20px 0 18px;
-            border: 2px solid #3f3b6b;
-            aspect-ratio: 16 / 9;
+        .auth-area {
             display: flex;
-            justify-content: center;
+            gap: 12px;
             align-items: center;
         }
-        video, canvas {
-            display: none; /* hidden, processing only */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #2b1938;
+            padding: 8px 18px 8px 12px;
+            border-radius: 50px;
+            border: 1px solid #ab7bd3;
         }
-        .status-panel {
-            background: #22223b;
-            border-radius: 32px;
-            padding: 22px 20px;
-            margin: 20px 0;
+        .user-profile img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #c9a6ff;
+        }
+        .user-profile span {
+            color: #f0dcff;
+            font-weight: 500;
+        }
+        button {
+            background: #6b3f9b;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #b17ed8;
+            box-shadow: 0 6px 0 #391f4b;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button:hover {
+            background: #8653c2;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 #391f4b;
+        }
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #391f4b;
+        }
+        button:disabled {
+            opacity: 0.4;
+            transform: none;
+            box-shadow: 0 4px 0 #391f4b;
+            pointer-events: none;
+        }
+        .video-section {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #4f4b87;
+            gap: 24px;
+            margin: 30px 0 25px;
         }
-        .motion-state {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-size: 1.4rem;
+        .video-box {
+            flex: 1 1 300px;
+            background: #110916;
+            border-radius: 36px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            position: relative;
+            border: 2px solid #6a40a0;
+            box-shadow: 0 20px 30px -8px black;
         }
-        .motion-led {
-            width: 22px;
-            height: 22px;
-            border-radius: 22px;
-            background: #5f5b9e;
-            box-shadow: 0 0 8px #7974d0;
-            transition: background 0.1s, box-shadow 0.1s;
+        .video-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #1e1027;
         }
-        .motion-led.active {
-            background: #6df06d;
-            box-shadow: 0 0 16px #62fc62;
-        }
-        .timer-box {
-            background: #121222;
-            padding: 14px 22px;
+        .video-label {
+            position: absolute;
+            bottom: 15px;
+            left: 20px;
+            background: #230e33ee;
+            color: #e9c5ff;
+            padding: 6px 16px;
             border-radius: 60px;
-            font-size: 2.1rem;
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-            letter-spacing: 2px;
-            color: #c3bdf2;
-            border: 1px solid #5e56b3;
-        }
-        .alert-bar {
-            background: #323232;
-            border-radius: 60px;
-            padding: 14px 24px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(8px);
+            border: 1px solid #b17ed8;
             font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 16px 0 10px;
-            transition: background 0.2s;
-        }
-        .alert-bar.active {
-            background: #d33c3c;
-            color: white;
-            font-weight: 600;
-            box-shadow: 0 0 15px #ff5e5e;
         }
         .controls {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
-            margin: 24px 0 12px;
-            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            margin: 30px 0 20px;
         }
-        button {
-            background: #3f3a75;
-            border: none;
-            color: white;
-            font-size: 1rem;
-            font-weight: 500;
-            padding: 14px 24px;
+        .action-btn {
+            background: #2f1b41;
+            border: 1px solid #ac74df;
+            min-width: 140px;
+            box-shadow: 0 5px 0 #1b0f24;
+        }
+        .action-btn.pause {
+            background: #502c6b;
+        }
+        .status-badge {
+            background: #2f1c3e;
             border-radius: 60px;
-            cursor: pointer;
-            transition: 0.15s;
-            flex: 1 0 auto;
-            border: 1px solid #6a64b5;
-            box-shadow: 0 6px 0 #1f1e36;
-        }
-        button:hover {
-            background: #5350a2;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 0 #1f1e36;
-        }
-        button:active {
-            transform: translateY(4px);
-            box-shadow: 0 2px 0 #1f1e36;
-        }
-        .sliders {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-        .slider-item {
-            flex: 1;
-            min-width: 180px;
-        }
-        label {
-            display: block;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            color: #bfb9f0;
-        }
-        input[type=range] {
-            width: 100%;
-            background: #2f2b52;
-            height: 6px;
-            border-radius: 6px;
-            accent-color: #817cda;
-        }
-        .value-badge {
-            background: #0f0f23;
-            padding: 4px 12px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            margin-left: 12px;
-        }
-        .footnote {
-            font-size: 0.8rem;
-            color: #9b95cf;
-            margin-top: 28px;
+            padding: 12px 28px;
+            color: #cfb0f0;
+            font-weight: 500;
             text-align: center;
-            border-top: 1px solid #494478;
-            padding-top: 18px;
+            border: 1px solid #a06ac9;
+            display: inline-block;
+        }
+        .footer {
+            margin-top: 20px;
+            color: #a586c0;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .toast {
+            background: #4a2966;
+            border-radius: 60px;
+            padding: 10px 20px;
+            color: #ffdbff;
         }
     </style>
 </head>
 <body>
-<div class="card">
-    <h1>📷 productive motion <span>alpha</span></h1>
-    <p style="margin: 0 0 8px; color:#ccc7ff;">camera motion detection · alerts after inactivity</p>
-
-    <!-- hidden video & canvas for processing -->
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" style="display: none"></canvas>
-
-    <div class="video-container" id="videoPlaceholder">
-        <div style="color: #9b95cf;">📡 camera feed (hidden, processing in background)</div>
-    </div>
-
-    <div class="status-panel">
-        <div class="motion-state">
-            <span>🚶 motion</span>
-            <span class="motion-led" id="motionLed"></span>
+<div class="app-container" id="app">
+    <!-- header -->
+    <div class="header">
+        <div class="logo">
+            🌙 lunahappy
+            <span>random</span>
         </div>
-        <div class="timer-box" id="timerDisplay">0.0s</div>
-    </div>
-
-    <div class="alert-bar" id="alertBar">
-        <span>⏰ alert</span>
-        <span id="alertMessage">no alert</span>
-    </div>
-
-    <div class="controls">
-        <button id="startBtn">▶ start camera</button>
-        <button id="stopBtn" disabled>⏹ stop</button>
-        <button id="soundToggle">🔊 sound: on</button>
-    </div>
-
-    <div class="sliders">
-        <div class="slider-item">
-            <label>🔎 sensitivity <span id="sensValue" class="value-badge">25</span></label>
-            <input type="range" id="sensitivity" min="5" max="80" value="25" step="1">
-        </div>
-        <div class="slider-item">
-            <label>⏱️ idle limit <span id="limitValue" class="value-badge">15s</span></label>
-            <input type="range" id="timeLimit" min="2" max="60" value="15" step="1">
+        <div class="auth-area" id="authArea">
+            <!-- filled by js -->
         </div>
     </div>
 
-    <div class="footnote">
-        ⚡ no motion for more than <span id="limitDisplay">15</span> seconds → alert ⚡
+    <!-- main UI (visible only when logged in) -->
+    <div id="chatUI" class="hidden">
+        <div class="video-section">
+            <div class="video-box">
+                <video id="localVideo" autoplay playsinline muted></video>
+                <div class="video-label">🫵 you</div>
+            </div>
+            <div class="video-box">
+                <video id="remoteVideo" autoplay playsinline></video>
+                <div class="video-label">👤 stranger</div>
+            </div>
+        </div>
+
+        <!-- status & controls -->
+        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <div class="status-badge" id="connectionStatus">💬 idle</div>
+        </div>
+
+        <div class="controls">
+            <button class="action-btn" id="findBtn">✨ find partner</button>
+            <button class="action-btn" id="skipBtn" disabled>⏭️ skip</button>
+            <button class="action-btn pause" id="pauseVideoBtn" disabled>⏸️ pause camera</button>
+            <button class="action-btn" id="logoutBtn">🚪 logout</button>
+        </div>
+        <div class="footer" id="infoMessage">
+            ⚡ video is never stored · only peer-to-peer
+        </div>
+    </div>
+
+    <!-- login prompt (shown when logged out) -->
+    <div id="loginUI">
+        <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 4rem; margin-bottom: 20px;">🌙✨</div>
+            <h2 style="color: #f0dcff; font-weight: 400;">sign in to meet strangers</h2>
+            <button id="googleLoginBtn" style="margin-top: 30px; font-size: 1.2rem; padding: 16px 40px;">🔐 continue with Google</button>
+        </div>
     </div>
 </div>
 
 <script>
     (function() {
-        // DOM elements
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        // ==================== firebase config (provided) ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAHrBE3doAhDni4mcNhylJD8o3r5cNZYSI",
+            authDomain: "ls-mannage.firebaseapp.com",
+            databaseURL: "https://ls-mannage-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "ls-mannage",
+            storageBucket: "ls-mannage.firebasestorage.app",
+            messagingSenderId: "115534926798",
+            appId: "1:115534926798:web:4ea3ab3c1a2d44e2e1d19f",
+            measurementId: "G-P2JQH8M41Y"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        const provider = new firebase.auth.GoogleAuthProvider();
 
-        const motionLed = document.getElementById('motionLed');
-        const timerDisplay = document.getElementById('timerDisplay');
-        const alertBar = document.getElementById('alertBar');
-        const alertMessage = document.getElementById('alertMessage');
+        // ==================== DOM elements ====================
+        const app = document.getElementById('app');
+        const loginUI = document.getElementById('loginUI');
+        const chatUI = document.getElementById('chatUI');
+        const authArea = document.getElementById('authArea');
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const findBtn = document.getElementById('findBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const pauseVideoBtn = document.getElementById('pauseVideoBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const infoMessage = document.getElementById('infoMessage');
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
 
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const soundToggle = document.getElementById('soundToggle');
+        // ==================== state variables ====================
+        let currentUser = null;
+        let localStream = null;               // webcam stream
+        let peerConnection = null;             // RTCPeerConnection
+        let remoteStream = new MediaStream();  // we'll add tracks later
+        remoteVideo.srcObject = remoteStream;
 
-        const sensSlider = document.getElementById('sensitivity');
-        const sensValue = document.getElementById('sensValue');
-        const limitSlider = document.getElementById('timeLimit');
-        const limitValue = document.getElementById('limitValue');
-        const limitDisplay = document.getElementById('limitDisplay');
+        // firebase paths & listeners
+        let waitingRef = null;                 // reference to /waiting
+        let roomRef = null;                    // reference to active room
+        let currentRoomId = null;
+        let partnerId = null;
 
-        // state
-        let stream = null;
-        let animationId = null;
-        let previousFrame = null;      // grayscale image data for comparison
-        let lastMotionTime = performance.now();  // timestamp of last detected motion
-        let alertActive = false;
-        let soundEnabled = true;
-        let audioCtx = null;            // for beep
+        // paused flag
+        let videoPaused = false;
+        let localVideoTrack = null;
 
-        // parameters
-        let motionThreshold = 25;        // from slider (0-100 scaled)
-        let idleLimitSec = 15;           // from slider
+        // onDisconnect handlers
+        let onDisconnectWaiting = null;
+        let onDisconnectRoom = null;
 
-        // update slider displays
-        function updateSensitivity() {
-            motionThreshold = parseInt(sensSlider.value);
-            sensValue.innerText = motionThreshold;
+        // ==================== auth UI update ====================
+        function updateAuthUI(user) {
+            authArea.innerHTML = '';
+            if (user) {
+                const profileDiv = document.createElement('div');
+                profileDiv.className = 'user-profile';
+                profileDiv.innerHTML = `
+                    <img src="${user.photoURL || 'https://www.gstatic.com/mobilesdk/190424_mobilesdk/default_user.jpg'}" alt="avatar">
+                    <span>${user.displayName || 'user'}</span>
+                `;
+                authArea.appendChild(profileDiv);
+            } else {
+                authArea.innerHTML = `<div class="toast">not signed in</div>`;
+            }
         }
-        function updateTimeLimit() {
-            idleLimitSec = parseInt(limitSlider.value);
-            limitValue.innerText = idleLimitSec + 's';
-            limitDisplay.innerText = idleLimitSec;
-        }
-        sensSlider.addEventListener('input', updateSensitivity);
-        limitSlider.addEventListener('input', updateTimeLimit);
-        updateSensitivity();
-        updateTimeLimit();
 
-        // helper: play alert sound using Web Audio API
-        function playAlertSound() {
-            if (!soundEnabled) return;
+        // ==================== login / logout ====================
+        googleLoginBtn.addEventListener('click', async () => {
             try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume().then(() => {
-                        beep();
-                    }).catch(() => {});
+                await auth.signInWithPopup(provider);
+            } catch (e) {
+                alert('login failed: ' + e.message);
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await cleanupBeforeSignout();
+            auth.signOut();
+        });
+
+        async function cleanupBeforeSignout() {
+            // stop camera, close connections, remove from waiting/rooms
+            await stopAllChat();
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+                localStream = null;
+                localVideo.srcObject = null;
+            }
+        }
+
+        // ==================== auth state observer ====================
+        auth.onAuthStateChanged(async (user) => {
+            currentUser = user;
+            updateAuthUI(user);
+            if (user) {
+                loginUI.classList.add('hidden');
+                chatUI.classList.remove('hidden');
+                // init local webcam
+                await initLocalStream();
+            } else {
+                loginUI.classList.remove('hidden');
+                chatUI.classList.add('hidden');
+                // clean up everything
+                await stopAllChat();
+                if (localStream) {
+                    localStream.getTracks().forEach(t => t.stop());
+                    localStream = null;
+                    localVideo.srcObject = null;
+                }
+                if (peerConnection) peerConnection.close();
+                peerConnection = null;
+                remoteStream = new MediaStream();
+                remoteVideo.srcObject = remoteStream;
+                connectionStatus.innerText = '💤 signed out';
+            }
+        });
+
+        // ==================== local camera ====================
+        async function initLocalStream() {
+            if (localStream) return;
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                localVideo.srcObject = localStream;
+                localVideoTrack = localStream.getVideoTracks()[0];
+                // update pause button state
+                pauseVideoBtn.disabled = false;
+                videoPaused = false;
+                pauseVideoBtn.innerHTML = '⏸️ pause camera';
+            } catch (e) {
+                infoMessage.innerText = '⚠️ cannot access camera: ' + e.message;
+            }
+        }
+
+        // ==================== pause / resume video ====================
+        pauseVideoBtn.addEventListener('click', () => {
+            if (!localVideoTrack) return;
+            if (videoPaused) {
+                localVideoTrack.enabled = true;
+                videoPaused = false;
+                pauseVideoBtn.innerHTML = '⏸️ pause camera';
+            } else {
+                localVideoTrack.enabled = false;
+                videoPaused = true;
+                pauseVideoBtn.innerHTML = '▶️ resume camera';
+            }
+        });
+
+        // ==================== core chat logic ====================
+        // stops everything: peer connection, removes from waiting/rooms, resets UI
+        async function stopAllChat() {
+            // remove any waiting entry
+            if (waitingRef && currentUser) {
+                await database.ref(`waiting/${currentUser.uid}`).remove();
+                waitingRef = null;
+            }
+            // leave room if any
+            if (roomRef && currentRoomId && currentUser) {
+                await database.ref(`rooms/${currentRoomId}/participants/${currentUser.uid}`).remove();
+                // if room becomes empty, remove it (optional)
+                roomRef = null;
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            // clear remote stream
+            remoteStream.getTracks().forEach(t => t.stop());
+            remoteStream = new MediaStream();
+            remoteVideo.srcObject = remoteStream;
+
+            currentRoomId = null;
+            partnerId = null;
+            connectionStatus.innerText = '💬 idle';
+            skipBtn.disabled = true;
+            // enable find
+            findBtn.disabled = false;
+        }
+
+        // find random partner
+        findBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            await stopAllChat(); // ensure clean state
+            connectionStatus.innerText = '🔎 looking for someone...';
+            findBtn.disabled = true;
+
+            try {
+                // try to claim a waiting user (transaction style)
+                const waitingSnapshot = await database.ref('waiting').once('value');
+                const waiting = waitingSnapshot.val();
+                let otherUserId = null;
+                if (waiting) {
+                    // pick first that is not current user
+                    const entries = Object.entries(waiting);
+                    for (let [uid, data] of entries) {
+                        if (uid !== currentUser.uid) {
+                            otherUserId = uid;
+                            break;
+                        }
+                    }
+                }
+
+                if (otherUserId) {
+                    // we found someone waiting: remove them from waiting and create a room
+                    await database.ref(`waiting/${otherUserId}`).remove();
+                    // create unique room id
+                    const roomId = `room_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+                    const roomData = {
+                        participants: {
+                            [currentUser.uid]: true,
+                            [otherUserId]: true
+                        },
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    await database.ref(`rooms/${roomId}`).set(roomData);
+                    // set up onDisconnect cleanup for both participants
+                    database.ref(`rooms/${roomId}/participants/${currentUser.uid}`).onDisconnect().remove();
+                    database.ref(`rooms/${roomId}/participants/${otherUserId}`).onDisconnect().remove(); // we'll also set on other side but here it's fine
+
+                    currentRoomId = roomId;
+                    roomRef = database.ref(`rooms/${roomId}`);
+                    partnerId = otherUserId;
+
+                    connectionStatus.innerText = '✅ connecting to stranger...';
+                    // initiate peer connection as offerer
+                    await createPeerConnection(true, roomId, otherUserId);
                 } else {
-                    beep();
+                    // no one waiting -> add ourselves to waiting
+                    waitingRef = database.ref(`waiting/${currentUser.uid}`);
+                    await waitingRef.set({ timestamp: firebase.database.ServerValue.TIMESTAMP });
+                    waitingRef.onDisconnect().remove();
+                    connectionStatus.innerText = '⏳ waiting for a partner...';
+                    // listen for when someone creates a room with us
+                    listenForRoomCreation();
                 }
             } catch (e) {
-                console.warn('audio not supported');
+                console.error(e);
+                connectionStatus.innerText = '⚠️ error finding partner';
+                findBtn.disabled = false;
             }
-        }
-        function beep() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 880;
-            gain.gain.value = 0.2;
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.15);
-        }
-
-        // motion detection: compare current frame to previous, return average difference (0-255)
-        function computeMotion(currentImageData) {
-            if (!previousFrame) return 0; // first frame
-            const data = currentImageData.data;
-            const prev = previousFrame.data;
-            const len = data.length; // 4 bytes per pixel (rgba)
-            let diff = 0;
-            // compare every 4th byte (green channel) – fast and sufficient
-            for (let i = 0; i < len; i += 4) {
-                // simple grayscale approximation using green (or use average)
-                const currVal = data[i+1];     // green
-                const prevVal = prev[i+1];
-                diff += Math.abs(currVal - prevVal);
-            }
-            const avgDiff = diff / (len / 4);   // average per pixel
-            return avgDiff;
-        }
-
-        // capture current video frame to canvas, return ImageData
-        function captureFrame() {
-            if (video.videoWidth === 0 || video.videoHeight === 0) return null;
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            return ctx.getImageData(0, 0, canvas.width, canvas.height);
-        }
-
-        // main monitoring loop
-        function detectLoop() {
-            if (!stream || !video.srcObject) {
-                // stop loop if camera stopped
-                return;
-            }
-
-            const frame = captureFrame();
-            if (frame) {
-                const motionAmount = computeMotion(frame);
-                const now = performance.now();
-
-                // motion if above threshold
-                if (motionAmount > motionThreshold) {
-                    lastMotionTime = now;
-                    motionLed.classList.add('active');
-                } else {
-                    motionLed.classList.remove('active');
-                }
-
-                // update timer display (seconds since last motion)
-                const secondsSinceMotion = (now - lastMotionTime) / 1000;
-                timerDisplay.innerText = secondsSinceMotion.toFixed(1) + 's';
-
-                // check alert condition
-                if (secondsSinceMotion > idleLimitSec) {
-                    if (!alertActive) {
-                        alertActive = true;
-                        alertBar.classList.add('active');
-                        alertMessage.innerText = '⚠️ NOT PRODUCTIVE (idle too long) ⚠️';
-                        if (soundEnabled) playAlertSound();
-                    }
-                } else {
-                    if (alertActive) {
-                        alertActive = false;
-                        alertBar.classList.remove('active');
-                        alertMessage.innerText = 'no alert';
-                    }
-                }
-
-                // store current frame as previous for next iteration
-                previousFrame = frame;
-            }
-
-            // continue loop
-            animationId = requestAnimationFrame(detectLoop);
-        }
-
-        // start camera
-        async function startCamera() {
-            if (stream) {
-                stopCamera(); // clean previous
-            }
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                // wait for video to be ready
-                video.onloadedmetadata = () => {
-                    video.play();
-                    // reset timer & previous frame
-                    lastMotionTime = performance.now();
-                    previousFrame = null;
-                    alertActive = false;
-                    alertBar.classList.remove('active');
-                    alertMessage.innerText = 'no alert';
-                    motionLed.classList.remove('active');
-                    timerDisplay.innerText = '0.0s';
-
-                    // start detection loop if not already
-                    if (animationId) cancelAnimationFrame(animationId);
-                    animationId = requestAnimationFrame(detectLoop);
-                };
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-            } catch (err) {
-                alert('Cannot access camera. Permissions?');
-                console.error(err);
-            }
-        }
-
-        // stop camera
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-                video.srcObject = null;
-            }
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-                animationId = null;
-            }
-            previousFrame = null;
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            motionLed.classList.remove('active');
-            timerDisplay.innerText = '0.0s';
-            alertActive = false;
-            alertBar.classList.remove('active');
-            alertMessage.innerText = 'no alert';
-        }
-
-        // sound toggle
-        soundToggle.addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            soundToggle.innerText = soundEnabled ? '🔊 sound: on' : '🔇 sound: off';
         });
 
-        startBtn.addEventListener('click', startCamera);
-        stopBtn.addEventListener('click', stopCamera);
+        // when we are waiting, we need to detect when a room containing us appears
+        function listenForRoomCreation() {
+            if (!currentUser) return;
+            const roomsQuery = database.ref('rooms').orderByChild(`participants/${currentUser.uid}`).equalTo(true);
+            roomsQuery.on('child_added', async (snapshot) => {
+                const roomId = snapshot.key;
+                const room = snapshot.val();
+                if (!room.participants) return;
+                // ensure we are not already in a room
+                if (currentRoomId) return;
+                // find partner id
+                const participants = Object.keys(room.participants);
+                const other = participants.find(uid => uid !== currentUser.uid);
+                if (!other) return;
 
-        // clean up on page unload
+                // stop waiting listener, remove waiting entry
+                roomsQuery.off('child_added');
+                if (waitingRef) {
+                    await waitingRef.remove();
+                    waitingRef = null;
+                }
+
+                currentRoomId = roomId;
+                roomRef = database.ref(`rooms/${roomId}`);
+                partnerId = other;
+                connectionStatus.innerText = '✅ connecting... (answerer)';
+
+                // create peer connection as answerer
+                await createPeerConnection(false, roomId, other);
+            });
+        }
+
+        // ==================== WebRTC ====================
+        async function createPeerConnection(isOfferer, roomId, remoteUid) {
+            if (!localStream) await initLocalStream();
+            if (!localStream) return;
+
+            const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+            peerConnection = new RTCPeerConnection(config);
+
+            // add local tracks
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            // receive remote tracks
+            peerConnection.ontrack = (event) => {
+                event.streams[0].getTracks().forEach(track => {
+                    remoteStream.addTrack(track);
+                });
+            };
+
+            // ICE candidates handling
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    // send candidate to firebase under room/ signaling
+                    if (currentRoomId) {
+                        database.ref(`rooms/${currentRoomId}/candidates/${currentUser.uid}`).push(event.candidate.toJSON());
+                    }
+                }
+            };
+
+            // listen for remote candidates
+            const candidatesRef = database.ref(`rooms/${roomId}/candidates/${remoteUid}`);
+            candidatesRef.on('child_added', (snapshot) => {
+                const candidate = new RTCIceCandidate(snapshot.val());
+                peerConnection.addIceCandidate(candidate).catch(e => console.warn('add ice error', e));
+            });
+
+            // connection state change
+            peerConnection.onconnectionstatechange = () => {
+                if (peerConnection.connectionState === 'connected') {
+                    connectionStatus.innerText = '🎥 connected!';
+                    skipBtn.disabled = false;
+                } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+                    connectionStatus.innerText = '❌ disconnected';
+                    skipBtn.disabled = true;
+                    // maybe auto clean?
+                }
+            };
+
+            // signaling: offer / answer
+            const signalingRef = database.ref(`rooms/${roomId}/signaling`);
+
+            if (isOfferer) {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                // send offer
+                await signalingRef.set({ offer: offer.toJSON(), answer: null });
+                // wait for answer
+                signalingRef.on('value', async (snap) => {
+                    const data = snap.val();
+                    if (data && data.answer && !peerConnection.currentRemoteDescription) {
+                        const answer = new RTCSessionDescription(data.answer);
+                        await peerConnection.setRemoteDescription(answer);
+                    }
+                });
+            } else {
+                // answerer: wait for offer
+                signalingRef.on('value', async (snap) => {
+                    const data = snap.val();
+                    if (data && data.offer && !peerConnection.currentRemoteDescription) {
+                        const offer = new RTCSessionDescription(data.offer);
+                        await peerConnection.setRemoteDescription(offer);
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        // send answer
+                        await signalingRef.update({ answer: answer.toJSON() });
+                    }
+                });
+            }
+
+            // onDisconnect cleanups for room signaling (optional)
+            database.ref(`rooms/${roomId}/candidates/${currentUser.uid}`).onDisconnect().remove();
+            database.ref(`rooms/${roomId}/signaling`).onDisconnect().remove(); // risky if both disconnect but fine
+        }
+
+        // ==================== skip button ====================
+        skipBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            await stopAllChat();
+            // enable find
+            findBtn.disabled = false;
+            connectionStatus.innerText = '💬 idle (click find)';
+        });
+
+        // ==================== on page unload / clean ====================
         window.addEventListener('beforeunload', () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
+            if (currentUser) {
+                // best-effort cleanup
+                if (waitingRef) waitingRef.remove();
+                if (roomRef && currentRoomId) {
+                    database.ref(`rooms/${currentRoomId}/participants/${currentUser.uid}`).remove();
+                }
             }
-            if (audioCtx) audioCtx.close();
         });
+
+        // Initial UI state
+        if (!auth.currentUser) {
+            loginUI.classList.remove('hidden');
+            chatUI.classList.add('hidden');
+        } else {
+            // will be triggered by onAuthStateChanged
+        }
     })();
 </script>
 </body>

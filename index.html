@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion Alert · Productivity Camera</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #1e1e2f;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 16px;
+        }
+        .card {
+            background: #2d2d44;
+            border-radius: 28px;
+            padding: 28px 24px;
+            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.7);
+            max-width: 700px;
+            width: 100%;
+            color: #f0eefc;
+            border: 1px solid #45406b;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        h1 span {
+            background: #4c49b0;
+            font-size: 0.9rem;
+            padding: 6px 14px;
+            border-radius: 60px;
+            font-weight: 400;
+            color: white;
+        }
+        .video-container {
+            background: #1a1a2c;
+            border-radius: 24px;
+            overflow: hidden;
+            margin: 20px 0 18px;
+            border: 2px solid #3f3b6b;
+            aspect-ratio: 16 / 9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        video, canvas {
+            display: none; /* hidden, processing only */
+        }
+        .status-panel {
+            background: #22223b;
+            border-radius: 32px;
+            padding: 22px 20px;
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #4f4b87;
+        }
+        .motion-state {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 1.4rem;
+        }
+        .motion-led {
+            width: 22px;
+            height: 22px;
+            border-radius: 22px;
+            background: #5f5b9e;
+            box-shadow: 0 0 8px #7974d0;
+            transition: background 0.1s, box-shadow 0.1s;
+        }
+        .motion-led.active {
+            background: #6df06d;
+            box-shadow: 0 0 16px #62fc62;
+        }
+        .timer-box {
+            background: #121222;
+            padding: 14px 22px;
+            border-radius: 60px;
+            font-size: 2.1rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 2px;
+            color: #c3bdf2;
+            border: 1px solid #5e56b3;
+        }
+        .alert-bar {
+            background: #323232;
+            border-radius: 60px;
+            padding: 14px 24px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 16px 0 10px;
+            transition: background 0.2s;
+        }
+        .alert-bar.active {
+            background: #d33c3c;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 0 15px #ff5e5e;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 24px 0 12px;
+            align-items: center;
+        }
+        button {
+            background: #3f3a75;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 14px 24px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: 0.15s;
+            flex: 1 0 auto;
+            border: 1px solid #6a64b5;
+            box-shadow: 0 6px 0 #1f1e36;
+        }
+        button:hover {
+            background: #5350a2;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 #1f1e36;
+        }
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #1f1e36;
+        }
+        .sliders {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .slider-item {
+            flex: 1;
+            min-width: 180px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            color: #bfb9f0;
+        }
+        input[type=range] {
+            width: 100%;
+            background: #2f2b52;
+            height: 6px;
+            border-radius: 6px;
+            accent-color: #817cda;
+        }
+        .value-badge {
+            background: #0f0f23;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            margin-left: 12px;
+        }
+        .footnote {
+            font-size: 0.8rem;
+            color: #9b95cf;
+            margin-top: 28px;
+            text-align: center;
+            border-top: 1px solid #494478;
+            padding-top: 18px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>📷 productive motion <span>alpha</span></h1>
+    <p style="margin: 0 0 8px; color:#ccc7ff;">camera motion detection · alerts after inactivity</p>
+
+    <!-- hidden video & canvas for processing -->
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display: none"></canvas>
+
+    <div class="video-container" id="videoPlaceholder">
+        <div style="color: #9b95cf;">📡 camera feed (hidden, processing in background)</div>
+    </div>
+
+    <div class="status-panel">
+        <div class="motion-state">
+            <span>🚶 motion</span>
+            <span class="motion-led" id="motionLed"></span>
+        </div>
+        <div class="timer-box" id="timerDisplay">0.0s</div>
+    </div>
+
+    <div class="alert-bar" id="alertBar">
+        <span>⏰ alert</span>
+        <span id="alertMessage">no alert</span>
+    </div>
+
+    <div class="controls">
+        <button id="startBtn">▶ start camera</button>
+        <button id="stopBtn" disabled>⏹ stop</button>
+        <button id="soundToggle">🔊 sound: on</button>
+    </div>
+
+    <div class="sliders">
+        <div class="slider-item">
+            <label>🔎 sensitivity <span id="sensValue" class="value-badge">25</span></label>
+            <input type="range" id="sensitivity" min="5" max="80" value="25" step="1">
+        </div>
+        <div class="slider-item">
+            <label>⏱️ idle limit <span id="limitValue" class="value-badge">15s</span></label>
+            <input type="range" id="timeLimit" min="2" max="60" value="15" step="1">
+        </div>
+    </div>
+
+    <div class="footnote">
+        ⚡ no motion for more than <span id="limitDisplay">15</span> seconds → alert ⚡
+    </div>
+</div>
+
+<script>
+    (function() {
+        // DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        const motionLed = document.getElementById('motionLed');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const alertBar = document.getElementById('alertBar');
+        const alertMessage = document.getElementById('alertMessage');
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const soundToggle = document.getElementById('soundToggle');
+
+        const sensSlider = document.getElementById('sensitivity');
+        const sensValue = document.getElementById('sensValue');
+        const limitSlider = document.getElementById('timeLimit');
+        const limitValue = document.getElementById('limitValue');
+        const limitDisplay = document.getElementById('limitDisplay');
+
+        // state
+        let stream = null;
+        let animationId = null;
+        let previousFrame = null;      // grayscale image data for comparison
+        let lastMotionTime = performance.now();  // timestamp of last detected motion
+        let alertActive = false;
+        let soundEnabled = true;
+        let audioCtx = null;            // for beep
+
+        // parameters
+        let motionThreshold = 25;        // from slider (0-100 scaled)
+        let idleLimitSec = 15;           // from slider
+
+        // update slider displays
+        function updateSensitivity() {
+            motionThreshold = parseInt(sensSlider.value);
+            sensValue.innerText = motionThreshold;
+        }
+        function updateTimeLimit() {
+            idleLimitSec = parseInt(limitSlider.value);
+            limitValue.innerText = idleLimitSec + 's';
+            limitDisplay.innerText = idleLimitSec;
+        }
+        sensSlider.addEventListener('input', updateSensitivity);
+        limitSlider.addEventListener('input', updateTimeLimit);
+        updateSensitivity();
+        updateTimeLimit();
+
+        // helper: play alert sound using Web Audio API
+        function playAlertSound() {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(() => {
+                        beep();
+                    }).catch(() => {});
+                } else {
+                    beep();
+                }
+            } catch (e) {
+                console.warn('audio not supported');
+            }
+        }
+        function beep() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 880;
+            gain.gain.value = 0.2;
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        // motion detection: compare current frame to previous, return average difference (0-255)
+        function computeMotion(currentImageData) {
+            if (!previousFrame) return 0; // first frame
+            const data = currentImageData.data;
+            const prev = previousFrame.data;
+            const len = data.length; // 4 bytes per pixel (rgba)
+            let diff = 0;
+            // compare every 4th byte (green channel) – fast and sufficient
+            for (let i = 0; i < len; i += 4) {
+                // simple grayscale approximation using green (or use average)
+                const currVal = data[i+1];     // green
+                const prevVal = prev[i+1];
+                diff += Math.abs(currVal - prevVal);
+            }
+            const avgDiff = diff / (len / 4);   // average per pixel
+            return avgDiff;
+        }
+
+        // capture current video frame to canvas, return ImageData
+        function captureFrame() {
+            if (video.videoWidth === 0 || video.videoHeight === 0) return null;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
+        // main monitoring loop
+        function detectLoop() {
+            if (!stream || !video.srcObject) {
+                // stop loop if camera stopped
+                return;
+            }
+
+            const frame = captureFrame();
+            if (frame) {
+                const motionAmount = computeMotion(frame);
+                const now = performance.now();
+
+                // motion if above threshold
+                if (motionAmount > motionThreshold) {
+                    lastMotionTime = now;
+                    motionLed.classList.add('active');
+                } else {
+                    motionLed.classList.remove('active');
+                }
+
+                // update timer display (seconds since last motion)
+                const secondsSinceMotion = (now - lastMotionTime) / 1000;
+                timerDisplay.innerText = secondsSinceMotion.toFixed(1) + 's';
+
+                // check alert condition
+                if (secondsSinceMotion > idleLimitSec) {
+                    if (!alertActive) {
+                        alertActive = true;
+                        alertBar.classList.add('active');
+                        alertMessage.innerText = '⚠️ NOT PRODUCTIVE (idle too long) ⚠️';
+                        if (soundEnabled) playAlertSound();
+                    }
+                } else {
+                    if (alertActive) {
+                        alertActive = false;
+                        alertBar.classList.remove('active');
+                        alertMessage.innerText = 'no alert';
+                    }
+                }
+
+                // store current frame as previous for next iteration
+                previousFrame = frame;
+            }
+
+            // continue loop
+            animationId = requestAnimationFrame(detectLoop);
+        }
+
+        // start camera
+        async function startCamera() {
+            if (stream) {
+                stopCamera(); // clean previous
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                // wait for video to be ready
+                video.onloadedmetadata = () => {
+                    video.play();
+                    // reset timer & previous frame
+                    lastMotionTime = performance.now();
+                    previousFrame = null;
+                    alertActive = false;
+                    alertBar.classList.remove('active');
+                    alertMessage.innerText = 'no alert';
+                    motionLed.classList.remove('active');
+                    timerDisplay.innerText = '0.0s';
+
+                    // start detection loop if not already
+                    if (animationId) cancelAnimationFrame(animationId);
+                    animationId = requestAnimationFrame(detectLoop);
+                };
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } catch (err) {
+                alert('Cannot access camera. Permissions?');
+                console.error(err);
+            }
+        }
+
+        // stop camera
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.srcObject = null;
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            previousFrame = null;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            motionLed.classList.remove('active');
+            timerDisplay.innerText = '0.0s';
+            alertActive = false;
+            alertBar.classList.remove('active');
+            alertMessage.innerText = 'no alert';
+        }
+
+        // sound toggle
+        soundToggle.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            soundToggle.innerText = soundEnabled ? '🔊 sound: on' : '🔇 sound: off';
+        });
+
+        startBtn.addEventListener('click', startCamera);
+        stopBtn.addEventListener('click', stopCamera);
+
+        // clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (audioCtx) audioCtx.close();
+        });
+    })();
+</script>
+</body>
+</html>
